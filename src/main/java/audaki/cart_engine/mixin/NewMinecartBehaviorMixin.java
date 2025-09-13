@@ -45,8 +45,13 @@ public abstract class NewMinecartBehaviorMixin extends MinecartBehavior {
             return;
         }
 
-        if (passenger instanceof Player) {
-            setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_PLAYER_RIDER));
+        if (passenger instanceof Player player) {
+            // 检查玩家名字是否含有 "bot_"，如果含有则不应用玩家速度规则
+            if (player.getName().getString().contains("bot_")) {
+                setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_OTHER_RIDER));
+            } else {
+                setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_PLAYER_RIDER));
+            }
             return;
         }
 
