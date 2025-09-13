@@ -4,26 +4,19 @@ import audaki.cart_engine.AceGameRules;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.entity.vehicle.MinecartBehavior;
-import net.minecraft.world.entity.vehicle.NewMinecartBehavior;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.entity.vehicle.OldMinecartBehavior;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
+@Mixin(OldMinecartBehavior.class)
+public abstract class OldMinecartBehaviorMixin extends MinecartBehavior {
 
-@Mixin(NewMinecartBehavior.class)
-public abstract class NewMinecartBehaviorMixin extends MinecartBehavior {
-
-    protected NewMinecartBehaviorMixin(AbstractMinecart abstractMinecart) {
+    protected OldMinecartBehaviorMixin(AbstractMinecart abstractMinecart) {
         super(abstractMinecart);
     }
 
@@ -38,30 +31,38 @@ public abstract class NewMinecartBehaviorMixin extends MinecartBehavior {
             return;
         }
 
-        IntConsumer setSpeed = (speed) -> {
-            if (speed == 0) {
-                return;
-            }
-            cir.setReturnValue(speed * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
-            cir.cancel();
-        };
-
         Entity passenger = minecart.getFirstPassenger();
         if (passenger == null) {
-            setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_EMPTY_RIDER));
+            int speed = level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_EMPTY_RIDER);
+            if (speed > 0) {
+                cir.setReturnValue(speed * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
+                cir.cancel();
+            }
             return;
         }
 
         if (passenger instanceof Player player) {
             // 检查名字有 "bot_"
             if (player.getName().getString().contains("bot_")) {
-                setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_OTHER_RIDER));
+                int speed = level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_OTHER_RIDER);
+                if (speed > 0) {
+                    cir.setReturnValue(speed * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
+                    cir.cancel();
+                }
             } else {
-                setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_PLAYER_RIDER));
+                int speed = level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_PLAYER_RIDER);
+                if (speed > 0) {
+                    cir.setReturnValue(speed * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
+                    cir.cancel();
+                }
             }
             return;
         }
 
-        setSpeed.accept(level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_OTHER_RIDER));
+        int speed = level.getGameRules().getInt(AceGameRules.MINECART_MAX_SPEED_OTHER_RIDER);
+        if (speed > 0) {
+            cir.setReturnValue(speed * (this.minecart.isInWater() ? 0.5 : 1.0) / 20.0);
+            cir.cancel();
+        }
     }
 }

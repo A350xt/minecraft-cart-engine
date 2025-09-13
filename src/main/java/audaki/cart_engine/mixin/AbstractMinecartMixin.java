@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractMinecart.class)
 public abstract class AbstractMinecartMixin extends VehicleEntity {
@@ -30,27 +29,18 @@ public abstract class AbstractMinecartMixin extends VehicleEntity {
         super(type, level);
     }
 
-    @Unique
-    protected void juiceUpBehavior() {
-        if (this.behavior instanceof OldMinecartBehavior) {
-            AbstractMinecart instance = (AbstractMinecart) (Object) this;
+    @Inject(at = @At("TAIL"), method = "<init>")
+    public void _init(EntityType<?> entityType, Level level, CallbackInfo ci) {
+        // 在构造函数末尾根据类型设置正确的行为
+        AbstractMinecart instance = (AbstractMinecart) (Object) this;
+        if (entityType == EntityType.MINECART) {
+            // 普通可乘矿车：强制使用新行为
             this.behavior = new NewMinecartBehavior(instance);
+        } else {
+            // 其他矿车：即使实验启用导致被设为新行为，也强制回退到旧行为
+            if (this.behavior instanceof NewMinecartBehavior) {
+                this.behavior = new OldMinecartBehavior(instance);
+            }
         }
-    }
-
-    @Inject(at = @At("HEAD"), method = "setInitialPos")
-    public void _setInitialPos(double d, double e, double f, CallbackInfo ci) {
-        this.juiceUpBehavior();
-    }
-
-    @Inject(at = @At("HEAD"), method = "tick")
-    public void _tick(CallbackInfo ci) {
-        this.juiceUpBehavior();
-    }
-
-    @Inject(at = @At("HEAD"), method = "useExperimentalMovement", cancellable = true)
-    private static void _useExperimentalMovement(Level level, CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(true);
-        cir.cancel();
     }
 }
